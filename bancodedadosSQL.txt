@@ -1,0 +1,80 @@
+-- WARNING: This schema is for context only and is not meant to be run.
+-- Table order and constraints may not be valid for execution.
+
+CREATE TABLE public.clientes (
+  cliente_id uuid NOT NULL DEFAULT gen_random_uuid(),
+  data_criacao timestamp without time zone DEFAULT now(),
+  nome text,
+  cpf text UNIQUE,
+  data_nascimento date,
+  sexo text,
+  endereco text,
+  email text UNIQUE,
+  telefone text UNIQUE,
+  agencia text,
+  conta text,
+  CONSTRAINT clientes_pkey PRIMARY KEY (cliente_id)
+);
+CREATE TABLE public.denuncias_bcb (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  tipo_chave text CHECK (tipo_chave = ANY (ARRAY['cpf'::text, 'telefone'::text])),
+  data_denuncia timestamp without time zone DEFAULT now(),
+  cliente_id uuid,
+  valor_chave text,
+  CONSTRAINT denuncias_bcb_pkey PRIMARY KEY (id),
+  CONSTRAINT fk_cliente FOREIGN KEY (cliente_id) REFERENCES public.clientes(cliente_id)
+);
+CREATE TABLE public.login_clientes (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  agencia text NOT NULL,
+  conta text NOT NULL,
+  senha_hash text NOT NULL,
+  CONSTRAINT login_clientes_pkey PRIMARY KEY (id),
+  CONSTRAINT fk_agencia_conta FOREIGN KEY (agencia) REFERENCES public.clientes(agencia),
+  CONSTRAINT fk_agencia_conta FOREIGN KEY (conta) REFERENCES public.clientes(agencia),
+  CONSTRAINT fk_agencia_conta FOREIGN KEY (agencia) REFERENCES public.clientes(conta),
+  CONSTRAINT fk_agencia_conta FOREIGN KEY (conta) REFERENCES public.clientes(conta)
+);
+CREATE TABLE public.medpix (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  protocolo text UNIQUE,
+  cliente_id uuid,
+  data date NOT NULL,
+  hora time without time zone NOT NULL,
+  valor numeric NOT NULL,
+  status integer NOT NULL CHECK (status = ANY (ARRAY[1, 2, 3])),
+  arquivado boolean DEFAULT false,
+  CONSTRAINT medpix_pkey PRIMARY KEY (id),
+  CONSTRAINT med_pix_cliente_id_fkey FOREIGN KEY (cliente_id) REFERENCES public.clientes(cliente_id)
+);
+CREATE TABLE public.registro_cliente (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  cliente_id uuid NOT NULL,
+  motivo text NOT NULL,
+  data timestamp without time zone DEFAULT now(),
+  status integer NOT NULL CHECK (status = ANY (ARRAY[1, 2])),
+  CONSTRAINT registro_cliente_pkey PRIMARY KEY (id),
+  CONSTRAINT fk_cliente FOREIGN KEY (cliente_id) REFERENCES public.clientes(cliente_id)
+);
+CREATE TABLE public.transacoes (
+  cliente_id uuid,
+  valor numeric,
+  data_trans date,
+  hora_trans timestamp without time zone,
+  chavepix_cliente character varying,
+  chavepix_destinatario character varying,
+  dispositivo_cliente integer CHECK (dispositivo_cliente = ANY (ARRAY[1, 2, 3])),
+  dia_transac numeric,
+  id uuid,
+  nome_destinatario text,
+  movimentacao smallint,
+  CONSTRAINT transacoes_cliente_id_fkey FOREIGN KEY (cliente_id) REFERENCES public.clientes(cliente_id)
+);
+CREATE TABLE public.usuarios (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  email text NOT NULL UNIQUE,
+  senha_hash text NOT NULL,
+  nome text,
+  cargo text,
+  CONSTRAINT usuarios_pkey PRIMARY KEY (id)
+);
